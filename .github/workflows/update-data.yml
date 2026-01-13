@@ -41,13 +41,13 @@ jobs:
           git config user.name "fashionbook-bot"
           git config user.email "fashionbook-bot@users.noreply.github.com"
 
-          # IMPORTANT: догоняем remote перед коммитом
+          # 1) догоняем main
           git pull --rebase origin main
-          git push --force-with-lease origin HEAD:main
 
-
+          # 2) коммитим изменения
           git add data/*.json
           git commit -m "chore: auto-update data" || echo "No changes"
 
-          # IMPORTANT: безопасный push, если ветка уехала
+          # 3) ещё раз догоняем (на случай гонки) и пушим безопасно
+          git pull --rebase origin main
           git push --force-with-lease origin HEAD:main
