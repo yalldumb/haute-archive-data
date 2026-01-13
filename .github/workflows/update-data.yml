@@ -20,6 +20,7 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
         with:
+          ref: main
           fetch-depth: 0
 
       - name: Setup Python
@@ -33,23 +34,18 @@ jobs:
       - name: Run updater
         run: python scripts/update_data.py
 
-      - name: Commit & push (rebase + retry)
+      - name: Commit & push (rebase + force-with-lease)
         run: |
           set -e
 
           git config user.name "fashionbook-bot"
           git config user.email "fashionbook-bot@users.noreply.github.com"
 
-          # Всегда подхватываем свежий main
+          # IMPORTANT: догоняем remote перед коммитом
           git pull --rebase origin main
 
           git add data/*.json
           git commit -m "chore: auto-update data" || echo "No changes"
 
-          # На случай гонки: ветка могла уехать между pull и push
-          for i in 1 2 3; do
-            echo "Push attempt $i..."
-            git pull --rebase origin main || true
-            git push origin HEAD:main && break
-            sleep $((i * 2))
-          done
+          # IMPORTANT: безопасный push, если ветка уехала
+          git push --force-with-lease origin HEAD:main
