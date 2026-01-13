@@ -33,15 +33,23 @@ jobs:
       - name: Run updater
         run: python scripts/update_data.py
 
-      - name: Commit changes
+      - name: Commit & push (rebase + retry)
         run: |
+          set -e
+
           git config user.name "fashionbook-bot"
           git config user.email "fashionbook-bot@users.noreply.github.com"
 
-          git fetch origin main
-          git rebase origin/main
+          # Всегда подхватываем свежий main
+          git pull --rebase origin main
 
           git add data/*.json
           git commit -m "chore: auto-update data" || echo "No changes"
 
-          git push origin HEAD:main || (git pull --rebase origin main && git push origin HEAD:main)
+          # На случай гонки: ветка могла уехать между pull и push
+          for i in 1 2 3; do
+            echo "Push attempt $i..."
+            git pull --rebase origin main || true
+            git push origin HEAD:main && break
+            sleep $((i * 2))
+          done
