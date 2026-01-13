@@ -43,6 +43,8 @@ jobs:
 
           # IMPORTANT: догоняем remote перед коммитом
           git pull --rebase origin main
+          git push --force-with-lease origin HEAD:main
+
 
           git add data/*.json
           git commit -m "chore: auto-update data" || echo "No changes"
