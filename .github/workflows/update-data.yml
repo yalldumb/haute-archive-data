@@ -7,20 +7,19 @@ on:
 
 permissions:
   contents: write
+  pull-requests: write
 
 concurrency:
   group: update-data
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   update:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
         with:
-          ref: main
           fetch-depth: 0
 
       - name: Setup Python
@@ -34,20 +33,13 @@ jobs:
       - name: Run updater
         run: python scripts/update_data.py
 
-      - name: Commit & push (rebase + force-with-lease)
-        run: |
-          set -e
-
-          git config user.name "fashionbook-bot"
-          git config user.email "fashionbook-bot@users.noreply.github.com"
-
-          # 1) догоняем main
-          git pull --rebase origin main
-
-          # 2) коммитим изменения
-          git add data/*.json
-          git commit -m "chore: auto-update data" || echo "No changes"
-
-          # 3) ещё раз догоняем (на случай гонки) и пушим безопасно
-          git pull --rebase origin main
-          git push --force-with-lease origin HEAD:main
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v6
+        with:
+          commit-message: "chore: auto-update data"
+          title: "chore: auto-update data"
+          body: "Automated update of data/*.json via GitHub Actions."
+          branch: "bot/update-data"
+          base: "main"
+          add-paths: |
+            data/*.json
